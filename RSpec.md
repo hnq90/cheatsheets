@@ -27,16 +27,55 @@
 				User.new(hash).should_not be_valid			end
 			it "should reject long passwords" do				long = "a" * 41				hash = @attr.merge(:password => long, :password_confirmation => long) 
 				User.new(hash).should_not be_valid			end
-		end	end
+		end
+		describe "password encryption" do			before(:each) do				@user = User.create!(@attr)			end
+			it "should have an encrypted password attribute" do 
+				@user.should respond_to(:encrypted_password)			end
+			it "should set the encrypted password" do			      @user.encrypted_password.should_not be_blank			end
+		end		end
 
 
 **Model validations for PASSWORD**	
 
+	attr_accessible :name, :email, :password, :password_confirmation
+	
 	# Automatically create the virtual attribute 'password_confirmation'.
 	validates :password, :presence => true,		:confirmation => true,		:length => { :within => 6..40 }	
-	
-	
-	
-	
-	
-	
+**Add `encrypted_password` to `User` model**
+
+	rails generate migration add_password_to_users encrypted_password:string	
+**Run specific RSpec test**
+
+	rspec spec/models/user_spec.rb \	> -e "should have an encrypted password attribute"	
+**`before_save` callback to save `encrypted_password` in model `User`**
+
+	before_save :encrypt_password	private		def encrypt_password			self.encrypted_password = encrypt(password)		end			def encrypt(string)			Digest::SHA2.hexdigest(string)		end	
+**Authenticate logins**
+
+	describe "authenticate method" do		it "should return nil on email/password mismatch" do
+			wrong_password_user = User.authenticate(@attr[:email], "wrongpass")
+			wrong_password_user.should be_nil		end				it "should return nil for an email address with no user" do
+			nonexistent_user = User.authenticate("bar@foo.com", @attr[:password])
+			nonexistent_user.should be_nil		end
+		it "should return the user on email/password match" do 			matching_user = User.authenticate(@attr[:email], @attr[:password])			matching_user.should == @user		end 
+		
+	end	
+**Class method to find users**
+
+	def self.authenticate(email, submitted_password)		user = find_by_email(email)		return nil if user.nil?		return user if user.has_password?(submitted_password)	end	
+Install `factory_girl_rails`
+
+	gem 'factory_girl_rails', '1.0'
+	
+`spec/factories.rb`
+
+	# Using the symbol ':user', we get Factory Girl to simulate the User model.	Factory.define :user do |user|		￼user.name "Michael Lee"		user.email 'mcle@gmail.com""		user.password "foobar"		user.password_confirmation" "foobar"	end
+
+`spec/controllers/users_controller_spec.rb`
+	describe "GET 'show'" do		before(:each) do			@user = Factory(:user)		end				it "should be successful" do 			get :show, :id => @user 			response.should be_success		end				it "should find the right user" do 			get :show, :id => @user 			assigns(:user).should == @user		end 	end
+**Test images:**
+	it "should have a profile image" do		get :show, :id => @user		response.should have_selector("h1>img", :class => "gravatar")	end
+`gravatar_image_tag`
+	<%= gravatar_image_tag 'example@railstutorial.org' %>
+**A Gravatar helper**
+	def gravatar_for(user, options = { :size => 50 }) 		gravatar_image_tag(user.email.downcase, :alt => user.name,			:class => 'gravatar',			:gravatar => options)	end
