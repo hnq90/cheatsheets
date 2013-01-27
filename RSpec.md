@@ -1,3 +1,28 @@
+**GEMFILE**
+
+	group :development do
+     gem 'rspec-rails'
+	end
+
+	group :test do
+     gem 'rspec'
+     gem 'webrat'
+	end
+
+**Install RSpec**
+
+	rails generate rspec:install
+
+
+Optional:
+
+	gem install autotest
+	gem install autotest-rails-pure
+	gem install autotest-fsevent
+	gem install autotest-growl
+
+
+
 **Listing 5.16** Additions to .autotest needed to run integration tests with Autotest on OS X.
 	Autotest.add_hook :initialize do |autotest| autotest.add_mapping(/ˆspec\/requests\/.*_spec\.rb$/) do		autotest.files_matching(/ˆspec\/requests\/.*_spec\.rb$/)	end end
 
